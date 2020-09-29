@@ -1,17 +1,4 @@
 let FPS = 60;
-let canvas = document.getElementById!("canvas") as HTMLCanvasElement;
-let context = <CanvasRenderingContext2D>canvas.getContext("2d");
-
-function drawRect() {
-  context.fillStyle = "#FF0000";
-  context.fillRect(0, 0, 150, 75);
-}
-
-function drawCircle() {
-  context.beginPath();
-  context.arc(100, 75, 50, 0, 2 * Math.PI);
-  context.fill();
-}
 
 interface IMatter {
   pos_x: number;
@@ -25,9 +12,13 @@ interface IMatter {
   F_x: number;
   F_y: number;
   density: number;
+  is_collided: boolean;
 }
 
 class Matter implements IMatter {
+  FPS: number;
+  canvas: HTMLCanvasElement;
+  context: CanvasRenderingContext2D;
   pos_x: number;
   pos_y: number;
   acc_x: number;
@@ -40,8 +31,18 @@ class Matter implements IMatter {
   F_y: number;
   density: number;
   gravity_constant: number;
-
-  constructor(pos_x: number, pos_y: number, radius: number, density: number) {
+  is_collided: boolean;
+  constructor(
+    pos_x: number,
+    pos_y: number,
+    radius: number,
+    density: number,
+    FPS: number
+  ) {
+    this.is_collided = false;
+    this.FPS = FPS;
+    this.canvas = document.getElementById("canvas") as HTMLCanvasElement;
+    this.context = <CanvasRenderingContext2D>this.canvas.getContext("2d");
     this.pos_x = pos_x;
     this.pos_y = pos_y;
     this.density = density;
@@ -53,7 +54,7 @@ class Matter implements IMatter {
     this.vel_y = 0;
     this.F_x = 0;
     this.F_y = 0;
-    this.gravity_constant = 6.674 * 10 ** -2;
+    this.gravity_constant = 6.674 * 10 ** 0;
   }
   measure_distance_x(matter: Matter): number {
     return this.pos_x - matter.pos_x;
@@ -92,48 +93,71 @@ class Matter implements IMatter {
     }
   }
 
-  measure_vel_pos() {
+  measure_vel() {
     this.vel_x += this.acc_x / FPS;
     this.vel_y += this.acc_y / FPS;
+  }
+  measure_pos() {
     this.pos_x += this.vel_x / FPS;
     this.pos_y += this.vel_y / FPS;
   }
 
   draw() {
-    context.beginPath();
-    context.arc(this.pos_x, this.pos_y, this.radius, 0, 2 * Math.PI);
-    context.stroke();
+    this.context.beginPath();
+    this.context.arc(this.pos_x, this.pos_y, this.radius, 0, 2 * Math.PI);
+    this.context.stroke();
   }
   reset() {
     this.acc_x = 0;
     this.acc_y = 0;
   }
+  collision_detection(matter: Matter) {}
 }
 
-let matterArray = [new Matter(10, 10, 10, 50), new Matter(500, 100, 10, 50)];
+class App {
+  FPS: number;
+  canvas: HTMLCanvasElement;
+  context: CanvasRenderingContext2D;
+  matterArray: Array<Matter>;
+  constructor() {
+    this.FPS = 60;
+    this.canvas = document.getElementById("canvas") as HTMLCanvasElement;
+    this.context = <CanvasRenderingContext2D>this.canvas.getContext("2d");
+    this.matterArray = [];
+    this.creataMatterArray(30);
+    this.appLoop();
+  }
 
-for (let index = 0; index < 3; index++) {
-  let x = Math.random() * canvas.width;
-  let y = Math.random() * canvas.height;
-  let radius = Math.random() * 50;
-  let density = Math.random() * 5;
-  matterArray.push(new Matter(x, y, radius, 1));
-}
-
-setInterval(function () {
-  context.clearRect(0, 0, canvas.width, canvas.height);
-
-  for (let x of matterArray) {
-    for (let y of matterArray) {
-      if (x == y) {
-        continue;
-      }
-      x.measure_acc(y);
-      x.measure_vel_pos();
-      x.draw();
+  creataMatterArray(matterNumber: number) {
+    for (let index = 0; index < matterNumber; index++) {
+      let x = Math.random() * this.canvas.width;
+      let y = Math.random() * this.canvas.height;
+      let radius = Math.random() * 50;
+      this.matterArray.push(new Matter(x, y, radius, 1, this.FPS));
     }
   }
-  matterArray.forEach((matter) => {
-    matter.reset();
-  });
-}, 1000 / FPS);
+
+  appLoop() {
+    setInterval(() => {
+      this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
+
+      for (let x of this.matterArray) {
+        for (let y of this.matterArray) {
+          if (x == y) {
+            continue;
+          }
+          x.measure_acc(y);
+        }
+        x.measure_vel();
+        x.measure_pos();
+        x.draw();
+      }
+
+      this.matterArray.forEach((matter) => {
+        matter.reset();
+      });
+    }, 1000 / this.FPS);
+  }
+}
+
+const Game = new App();

@@ -1,18 +1,11 @@
 "use strict";
 var FPS = 60;
-var canvas = document.getElementById("canvas");
-var context = canvas.getContext("2d");
-function drawRect() {
-    context.fillStyle = "#FF0000";
-    context.fillRect(0, 0, 150, 75);
-}
-function drawCircle() {
-    context.beginPath();
-    context.arc(100, 75, 50, 0, 2 * Math.PI);
-    context.fill();
-}
 var Matter = /** @class */ (function () {
-    function Matter(pos_x, pos_y, radius, density) {
+    function Matter(pos_x, pos_y, radius, density, FPS) {
+        this.is_collided = false;
+        this.FPS = FPS;
+        this.canvas = document.getElementById("canvas");
+        this.context = this.canvas.getContext("2d");
         this.pos_x = pos_x;
         this.pos_y = pos_y;
         this.density = density;
@@ -24,7 +17,7 @@ var Matter = /** @class */ (function () {
         this.vel_y = 0;
         this.F_x = 0;
         this.F_y = 0;
-        this.gravity_constant = 6.674 * Math.pow(10, -2);
+        this.gravity_constant = 6.674 * Math.pow(10, 0);
     }
     Matter.prototype.measure_distance_x = function (matter) {
         return this.pos_x - matter.pos_x;
@@ -52,46 +45,65 @@ var Matter = /** @class */ (function () {
             this.acc_y -= (total_force * y_axis) / this.mass;
         }
     };
-    Matter.prototype.measure_vel_pos = function () {
+    Matter.prototype.measure_vel = function () {
         this.vel_x += this.acc_x / FPS;
         this.vel_y += this.acc_y / FPS;
+    };
+    Matter.prototype.measure_pos = function () {
         this.pos_x += this.vel_x / FPS;
         this.pos_y += this.vel_y / FPS;
     };
     Matter.prototype.draw = function () {
-        context.beginPath();
-        context.arc(this.pos_x, this.pos_y, this.radius, 0, 2 * Math.PI);
-        context.stroke();
+        this.context.beginPath();
+        this.context.arc(this.pos_x, this.pos_y, this.radius, 0, 2 * Math.PI);
+        this.context.stroke();
     };
     Matter.prototype.reset = function () {
         this.acc_x = 0;
         this.acc_y = 0;
     };
+    Matter.prototype.collision_detection = function (matter) { };
     return Matter;
 }());
-var matterArray = [new Matter(10, 10, 10, 50), new Matter(500, 100, 10, 50)];
-for (var index = 0; index < 3; index++) {
-    var x = Math.random() * canvas.width;
-    var y = Math.random() * canvas.height;
-    var radius = Math.random() * 50;
-    var density = Math.random() * 5;
-    matterArray.push(new Matter(x, y, radius, 1));
-}
-setInterval(function () {
-    context.clearRect(0, 0, canvas.width, canvas.height);
-    for (var _i = 0, matterArray_1 = matterArray; _i < matterArray_1.length; _i++) {
-        var x = matterArray_1[_i];
-        for (var _a = 0, matterArray_2 = matterArray; _a < matterArray_2.length; _a++) {
-            var y = matterArray_2[_a];
-            if (x == y) {
-                continue;
-            }
-            x.measure_acc(y);
-            x.measure_vel_pos();
-            x.draw();
-        }
+var App = /** @class */ (function () {
+    function App() {
+        this.FPS = 60;
+        this.canvas = document.getElementById("canvas");
+        this.context = this.canvas.getContext("2d");
+        this.matterArray = [];
+        this.creataMatterArray(30);
+        this.appLoop();
     }
-    matterArray.forEach(function (matter) {
-        matter.reset();
-    });
-}, 1000 / FPS);
+    App.prototype.creataMatterArray = function (matterNumber) {
+        for (var index = 0; index < matterNumber; index++) {
+            var x = Math.random() * this.canvas.width;
+            var y = Math.random() * this.canvas.height;
+            var radius = Math.random() * 50;
+            this.matterArray.push(new Matter(x, y, radius, 1, this.FPS));
+        }
+    };
+    App.prototype.appLoop = function () {
+        var _this = this;
+        setInterval(function () {
+            _this.context.clearRect(0, 0, _this.canvas.width, _this.canvas.height);
+            for (var _i = 0, _a = _this.matterArray; _i < _a.length; _i++) {
+                var x = _a[_i];
+                for (var _b = 0, _c = _this.matterArray; _b < _c.length; _b++) {
+                    var y = _c[_b];
+                    if (x == y) {
+                        continue;
+                    }
+                    x.measure_acc(y);
+                }
+                x.measure_vel();
+                x.measure_pos();
+                x.draw();
+            }
+            _this.matterArray.forEach(function (matter) {
+                matter.reset();
+            });
+        }, 1000 / this.FPS);
+    };
+    return App;
+}());
+var Game = new App();
