@@ -54,7 +54,7 @@ class Matter implements IMatter {
     this.vel_y = 0;
     this.F_x = 0;
     this.F_y = 0;
-    this.gravity_constant = 6.674 * 10 ** 0;
+    this.gravity_constant = 6.674 * 10 ** -1;
   }
   measure_distance_x(matter: Matter): number {
     return this.pos_x - matter.pos_x;
@@ -81,16 +81,18 @@ class Matter implements IMatter {
 
   measure_acc(matter: Matter) {
     let total_force = this.measure_gravity(matter);
-    let y_axis =
-      this.measure_distance_y(matter) / this.measure_distance(matter);
-    let x_axis =
-      this.measure_distance_x(matter) / this.measure_distance(matter);
+    let x_axis;
+    let y_axis;
+
     if (this.measure_distance(matter) <= this.radius) {
-      this.reset();
+      y_axis = this.measure_distance_y(matter) / this.radius;
+      x_axis = this.measure_distance_x(matter) / this.radius;
     } else {
-      this.acc_x -= (total_force * x_axis) / this.mass;
-      this.acc_y -= (total_force * y_axis) / this.mass;
+      y_axis = this.measure_distance_y(matter) / this.measure_distance(matter);
+      x_axis = this.measure_distance_x(matter) / this.measure_distance(matter);
     }
+    this.acc_x -= (total_force * x_axis) / this.mass;
+    this.acc_y -= (total_force * y_axis) / this.mass;
   }
 
   measure_vel() {
@@ -107,6 +109,13 @@ class Matter implements IMatter {
     this.context.arc(this.pos_x, this.pos_y, this.radius, 0, 2 * Math.PI);
     this.context.stroke();
   }
+
+  draw_vector() {
+    this.context.beginPath();
+    this.context.moveTo(this.pos_x, this.pos_y);
+    this.context.lineTo(this.pos_x + this.vel_x, this.pos_y + this.vel_y);
+    this.context.stroke();
+  }
   reset() {
     this.acc_x = 0;
     this.acc_y = 0;
@@ -119,13 +128,18 @@ class App {
   canvas: HTMLCanvasElement;
   context: CanvasRenderingContext2D;
   matterArray: Array<Matter>;
+  addMatter: HTMLButtonElement;
   constructor() {
     this.FPS = 60;
     this.canvas = document.getElementById("canvas") as HTMLCanvasElement;
+    this.addMatter = document.getElementById("addMatter") as HTMLButtonElement;
     this.context = <CanvasRenderingContext2D>this.canvas.getContext("2d");
     this.matterArray = [];
-    this.creataMatterArray(30);
+    this.creataMatterArray(3);
     this.appLoop();
+    this.addMatter.addEventListener("click", () => {
+      this.creataMatterArray(1);
+    });
   }
 
   creataMatterArray(matterNumber: number) {
@@ -151,11 +165,9 @@ class App {
         x.measure_vel();
         x.measure_pos();
         x.draw();
+        x.draw_vector();
+        x.reset();
       }
-
-      this.matterArray.forEach((matter) => {
-        matter.reset();
-      });
     }, 1000 / this.FPS);
   }
 }

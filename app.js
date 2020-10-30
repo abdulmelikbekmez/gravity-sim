@@ -17,7 +17,7 @@ var Matter = /** @class */ (function () {
         this.vel_y = 0;
         this.F_x = 0;
         this.F_y = 0;
-        this.gravity_constant = 6.674 * Math.pow(10, 0);
+        this.gravity_constant = 6.674 * Math.pow(10, -1);
     }
     Matter.prototype.measure_distance_x = function (matter) {
         return this.pos_x - matter.pos_x;
@@ -35,15 +35,18 @@ var Matter = /** @class */ (function () {
     };
     Matter.prototype.measure_acc = function (matter) {
         var total_force = this.measure_gravity(matter);
-        var y_axis = this.measure_distance_y(matter) / this.measure_distance(matter);
-        var x_axis = this.measure_distance_x(matter) / this.measure_distance(matter);
+        var x_axis;
+        var y_axis;
         if (this.measure_distance(matter) <= this.radius) {
-            this.reset();
+            y_axis = this.measure_distance_y(matter) / this.radius;
+            x_axis = this.measure_distance_x(matter) / this.radius;
         }
         else {
-            this.acc_x -= (total_force * x_axis) / this.mass;
-            this.acc_y -= (total_force * y_axis) / this.mass;
+            y_axis = this.measure_distance_y(matter) / this.measure_distance(matter);
+            x_axis = this.measure_distance_x(matter) / this.measure_distance(matter);
         }
+        this.acc_x -= (total_force * x_axis) / this.mass;
+        this.acc_y -= (total_force * y_axis) / this.mass;
     };
     Matter.prototype.measure_vel = function () {
         this.vel_x += this.acc_x / FPS;
@@ -58,6 +61,12 @@ var Matter = /** @class */ (function () {
         this.context.arc(this.pos_x, this.pos_y, this.radius, 0, 2 * Math.PI);
         this.context.stroke();
     };
+    Matter.prototype.draw_vector = function () {
+        this.context.beginPath();
+        this.context.moveTo(this.pos_x, this.pos_y);
+        this.context.lineTo(this.pos_x + this.vel_x, this.pos_y + this.vel_y);
+        this.context.stroke();
+    };
     Matter.prototype.reset = function () {
         this.acc_x = 0;
         this.acc_y = 0;
@@ -67,12 +76,17 @@ var Matter = /** @class */ (function () {
 }());
 var App = /** @class */ (function () {
     function App() {
+        var _this = this;
         this.FPS = 60;
         this.canvas = document.getElementById("canvas");
+        this.addMatter = document.getElementById("addMatter");
         this.context = this.canvas.getContext("2d");
         this.matterArray = [];
-        this.creataMatterArray(30);
+        this.creataMatterArray(3);
         this.appLoop();
+        this.addMatter.addEventListener("click", function () {
+            _this.creataMatterArray(1);
+        });
     }
     App.prototype.creataMatterArray = function (matterNumber) {
         for (var index = 0; index < matterNumber; index++) {
@@ -98,10 +112,9 @@ var App = /** @class */ (function () {
                 x.measure_vel();
                 x.measure_pos();
                 x.draw();
+                x.draw_vector();
+                x.reset();
             }
-            _this.matterArray.forEach(function (matter) {
-                matter.reset();
-            });
         }, 1000 / this.FPS);
     };
     return App;
